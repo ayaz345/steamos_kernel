@@ -72,14 +72,14 @@ class CObject(Base_CObject):
         function-like macro, the name of the macro is returned. Otherwise
         ``False`` is returned.  """
 
-        if not self.objtype == 'function':
+        if self.objtype != 'function':
             return False
 
         m = c_funcptr_sig_re.match(sig)
         if m is None:
             m = c_sig_re.match(sig)
-            if m is None:
-                raise ValueError('no match')
+        if m is None:
+            raise ValueError('no match')
 
         rettype, fullname, arglist, _const = m.groups()
         arglist = arglist.strip()
@@ -116,15 +116,12 @@ class CObject(Base_CObject):
         if "name" in self.options:
             if self.objtype == 'function':
                 fullname = self.options["name"]
-            else:
-                # FIXME: handle :name: value of other declaration types?
-                pass
         return fullname
 
     def add_target_and_index(self, name, sig, signode):
         # for C API items we add a prefix since names are usually not qualified
         # by a module name and so easily clash with e.g. section titles
-        targetname = 'c.' + name
+        targetname = f'c.{name}'
         if targetname not in self.state.document.ids:
             signode['names'].append(targetname)
             signode['ids'].append(targetname)
@@ -135,13 +132,12 @@ class CObject(Base_CObject):
                 if self.objtype == 'function':
                     if ('c:func', name) not in self.env.config.nitpick_ignore:
                         self.state_machine.reporter.warning(
-                            'duplicate C object description of %s, ' % name +
-                            'other instance in ' + self.env.doc2path(inv[name][0]),
-                            line=self.lineno)
+                            f'duplicate C object description of {name}, other instance in {self.env.doc2path(inv[name][0])}',
+                            line=self.lineno,
+                        )
             inv[name] = (self.env.docname, self.objtype)
 
-        indextext = self.get_index_text(name)
-        if indextext:
+        if indextext := self.get_index_text(name):
             if major == 1 and minor < 4:
                 # indexnode's tuple changed in 1.4
                 # https://github.com/sphinx-doc/sphinx/commit/e6a5a3a92e938fcd75866b4227db9e0524d58f7c

@@ -110,10 +110,30 @@ def plot_perf_busy_with_sample(cpu_index):
         g_plot('set ylabel "P-State"')
         g_plot('set y2label "Scaled Busy/performance/io-busy(%)"')
         set_4_plot_linestyles(g_plot)
-        g_plot('plot "' + file_name + '" using {:d}:{:d} with linespoints linestyle 1 axis x1y2 title "performance",\\'.format(C_SAMPLE, C_CORE))
-        g_plot('"' + file_name + '" using {:d}:{:d} with linespoints linestyle 2 axis x1y2 title "scaled-busy",\\'.format(C_SAMPLE, C_SCALED))
-        g_plot('"' + file_name + '" using {:d}:{:d} with linespoints linestyle 3 axis x1y2 title "io-boost",\\'.format(C_SAMPLE, C_BOOST))
-        g_plot('"' + file_name + '" using {:d}:{:d} with linespoints linestyle 4 axis x1y1 title "P-State"'.format(C_SAMPLE, C_TO))
+        g_plot(
+            f'plot "{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 1 axis x1y2 title "performance",\\'.format(
+                C_SAMPLE, C_CORE
+            )
+        )
+        g_plot(
+            f'"{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 2 axis x1y2 title "scaled-busy",\\'.format(
+                C_SAMPLE, C_SCALED
+            )
+        )
+        g_plot(
+            f'"{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 3 axis x1y2 title "io-boost",\\'.format(
+                C_SAMPLE, C_BOOST
+            )
+        )
+        g_plot(
+            f'"{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 4 axis x1y1 title "P-State"'.format(
+                C_SAMPLE, C_TO
+            )
+        )
 
 def plot_perf_busy(cpu_index):
     """ Plot some per cpu information """
@@ -129,10 +149,30 @@ def plot_perf_busy(cpu_index):
         g_plot('set ylabel "P-State"')
         g_plot('set y2label "Scaled Busy/performance/io-busy(%)"')
         set_4_plot_linestyles(g_plot)
-        g_plot('plot "' + file_name + '" using {:d}:{:d} with linespoints linestyle 1 axis x1y2 title "performance",\\'.format(C_ELAPSED, C_CORE))
-        g_plot('"' + file_name + '" using {:d}:{:d} with linespoints linestyle 2 axis x1y2 title "scaled-busy",\\'.format(C_ELAPSED, C_SCALED))
-        g_plot('"' + file_name + '" using {:d}:{:d} with linespoints linestyle 3 axis x1y2 title "io-boost",\\'.format(C_ELAPSED, C_BOOST))
-        g_plot('"' + file_name + '" using {:d}:{:d} with linespoints linestyle 4 axis x1y1 title "P-State"'.format(C_ELAPSED, C_TO))
+        g_plot(
+            f'plot "{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 1 axis x1y2 title "performance",\\'.format(
+                C_ELAPSED, C_CORE
+            )
+        )
+        g_plot(
+            f'"{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 2 axis x1y2 title "scaled-busy",\\'.format(
+                C_ELAPSED, C_SCALED
+            )
+        )
+        g_plot(
+            f'"{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 3 axis x1y2 title "io-boost",\\'.format(
+                C_ELAPSED, C_BOOST
+            )
+        )
+        g_plot(
+            f'"{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 4 axis x1y1 title "P-State"'.format(
+                C_ELAPSED, C_TO
+            )
+        )
 
 def plot_durations(cpu_index):
     """ Plot per cpu durations """
@@ -149,7 +189,12 @@ def plot_durations(cpu_index):
 #       override common
         g_plot('set key off')
         set_4_plot_linestyles(g_plot)
-        g_plot('plot "' + file_name + '" using {:d}:{:d} with linespoints linestyle 1 axis x1y1'.format(C_ELAPSED, C_DURATION))
+        g_plot(
+            f'plot "{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 1 axis x1y1'.format(
+                C_ELAPSED, C_DURATION
+            )
+        )
 
 def plot_loads(cpu_index):
     """ Plot per cpu loads """
@@ -165,23 +210,29 @@ def plot_loads(cpu_index):
 #       override common
         g_plot('set key off')
         set_4_plot_linestyles(g_plot)
-        g_plot('plot "' + file_name + '" using {:d}:{:d} with linespoints linestyle 1 axis x1y1'.format(C_ELAPSED, C_LOAD))
+        g_plot(
+            f'plot "{file_name}'
+            + '" using {:d}:{:d} with linespoints linestyle 1 axis x1y1'.format(
+                C_ELAPSED, C_LOAD
+            )
+        )
 
 def plot_pstate_cpu_with_sample():
     """ Plot all cpu information """
 
-    if os.path.exists('cpu.csv'):
-        output_png = 'all_cpu_pstates_vs_samples.png'
-        g_plot = common_all_gnuplot_settings(output_png)
-        g_plot('set yrange [0:40]')
+    if not os.path.exists('cpu.csv'):
+        return
+    output_png = 'all_cpu_pstates_vs_samples.png'
+    g_plot = common_all_gnuplot_settings(output_png)
+    g_plot('set yrange [0:40]')
 #       override common
-        g_plot('set xlabel "Samples"')
-        g_plot('set ylabel "P-State"')
-        g_plot('set title "{} : cpu pstate vs. sample : {:%F %H:%M}"'.format(testname, datetime.now()))
-        title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
-        plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_SAMPLE, C_TO)
-        g_plot('title_list = "{}"'.format(title_list))
-        g_plot(plot_str)
+    g_plot('set xlabel "Samples"')
+    g_plot('set ylabel "P-State"')
+    g_plot('set title "{} : cpu pstate vs. sample : {:%F %H:%M}"'.format(testname, datetime.now()))
+    title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
+    plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_SAMPLE, C_TO)
+    g_plot(f'title_list = "{title_list}"')
+    g_plot(plot_str)
 
 def plot_pstate_cpu():
     """ Plot all cpu information from csv files """
@@ -197,7 +248,7 @@ def plot_pstate_cpu():
 #
     title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
     plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_ELAPSED, C_TO)
-    g_plot('title_list = "{}"'.format(title_list))
+    g_plot(f'title_list = "{title_list}"')
     g_plot(plot_str)
 
 def plot_load_cpu():
@@ -211,7 +262,7 @@ def plot_load_cpu():
 
     title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
     plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_ELAPSED, C_LOAD)
-    g_plot('title_list = "{}"'.format(title_list))
+    g_plot(f'title_list = "{title_list}"')
     g_plot(plot_str)
 
 def plot_frequency_cpu():
@@ -225,7 +276,7 @@ def plot_frequency_cpu():
 
     title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
     plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_ELAPSED, C_FREQ)
-    g_plot('title_list = "{}"'.format(title_list))
+    g_plot(f'title_list = "{title_list}"')
     g_plot(plot_str)
 
 def plot_duration_cpu():
@@ -240,7 +291,7 @@ def plot_duration_cpu():
 
     title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
     plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_ELAPSED, C_DURATION)
-    g_plot('title_list = "{}"'.format(title_list))
+    g_plot(f'title_list = "{title_list}"')
     g_plot(plot_str)
 
 def plot_scaled_cpu():
@@ -254,7 +305,7 @@ def plot_scaled_cpu():
 
     title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
     plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_ELAPSED, C_SCALED)
-    g_plot('title_list = "{}"'.format(title_list))
+    g_plot(f'title_list = "{title_list}"')
     g_plot(plot_str)
 
 def plot_boost_cpu():
@@ -268,7 +319,7 @@ def plot_boost_cpu():
 
     title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
     plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_ELAPSED, C_BOOST)
-    g_plot('title_list = "{}"'.format(title_list))
+    g_plot(f'title_list = "{title_list}"')
     g_plot(plot_str)
 
 def plot_ghz_cpu():
@@ -282,14 +333,14 @@ def plot_ghz_cpu():
 
     title_list = subprocess.check_output('ls cpu???.csv | sed -e \'s/.csv//\'',shell=True).replace('\n', ' ')
     plot_str = "plot for [i in title_list] i.'.csv' using {:d}:{:d} pt 7 ps 1 title i".format(C_ELAPSED, C_GHZ)
-    g_plot('title_list = "{}"'.format(title_list))
+    g_plot(f'title_list = "{title_list}"')
     g_plot(plot_str)
 
 def common_all_gnuplot_settings(output_png):
     """ common gnuplot settings for multiple CPUs one one graph. """
 
     g_plot = common_gnuplot_settings()
-    g_plot('set output "' + output_png + '"')
+    g_plot(f'set output "{output_png}"')
     return(g_plot)
 
 def common_gnuplot_settings():
@@ -332,10 +383,9 @@ def store_csv(cpu_int, time_pre_dec, time_post_dec, core_busy, scaled, _from, _t
         return
 
     try:
-        f_handle = open('cpu.csv', 'a')
-        string_buffer = "CPU_%03u, %05u, %06u, %u, %u, %u, %u, %u, %u, %u, %.4f, %u, %.2f, %.3f, %u, %.3f, %.3f, %s\n" % (cpu_int, int(time_pre_dec), int(time_post_dec), int(core_busy), int(scaled), int(_from), int(_to), int(mperf), int(aperf), int(tsc), freq_ghz, int(io_boost), load, duration_ms, sample_num, elapsed_time, tsc_ghz, common_comm)
-        f_handle.write(string_buffer);
-        f_handle.close()
+        with open('cpu.csv', 'a') as f_handle:
+            string_buffer = "CPU_%03u, %05u, %06u, %u, %u, %u, %u, %u, %u, %u, %.4f, %u, %.2f, %.3f, %u, %.3f, %.3f, %s\n" % (cpu_int, int(time_pre_dec), int(time_post_dec), int(core_busy), int(scaled), int(_from), int(_to), int(mperf), int(aperf), int(tsc), freq_ghz, int(io_boost), load, duration_ms, sample_num, elapsed_time, tsc_ghz, common_comm)
+            f_handle.write(string_buffer);
     except:
         print('IO error cpu.csv')
         return
@@ -358,10 +408,9 @@ def cleanup_data_files():
 
     if os.path.exists('cpu.csv'):
         os.remove('cpu.csv')
-    f_handle = open('cpu.csv', 'a')
-    f_handle.write('common_cpu, common_secs, common_usecs, core_busy, scaled_busy, from, to, mperf, aperf, tsc, freq, boost, load, duration_ms, sample_num, elapsed_time, tsc_ghz, common_comm')
-    f_handle.write('\n')
-    f_handle.close()
+    with open('cpu.csv', 'a') as f_handle:
+        f_handle.write('common_cpu, common_secs, common_usecs, core_busy, scaled_busy, from, to, mperf, aperf, tsc, freq, boost, load, duration_ms, sample_num, elapsed_time, tsc_ghz, common_comm')
+        f_handle.write('\n')
 
 def clear_trace_file():
     """ Clear trace file """
@@ -416,32 +465,30 @@ def read_trace_data(filename):
         quit()
 
     for line in data.splitlines():
-        search_obj = \
-            re.search(r'(^(.*?)\[)((\d+)[^\]])(.*?)(\d+)([.])(\d+)(.*?core_busy=)(\d+)(.*?scaled=)(\d+)(.*?from=)(\d+)(.*?to=)(\d+)(.*?mperf=)(\d+)(.*?aperf=)(\d+)(.*?tsc=)(\d+)(.*?freq=)(\d+)'
-                      , line)
-
-        if search_obj:
-            cpu = search_obj.group(3)
+        if search_obj := re.search(
+            r'(^(.*?)\[)((\d+)[^\]])(.*?)(\d+)([.])(\d+)(.*?core_busy=)(\d+)(.*?scaled=)(\d+)(.*?from=)(\d+)(.*?to=)(\d+)(.*?mperf=)(\d+)(.*?aperf=)(\d+)(.*?tsc=)(\d+)(.*?freq=)(\d+)',
+            line,
+        ):
+            cpu = search_obj[3]
             cpu_int = int(cpu)
             cpu = str(cpu_int)
 
-            time_pre_dec = search_obj.group(6)
-            time_post_dec = search_obj.group(8)
-            core_busy = search_obj.group(10)
-            scaled = search_obj.group(12)
-            _from = search_obj.group(14)
-            _to = search_obj.group(16)
-            mperf = search_obj.group(18)
-            aperf = search_obj.group(20)
-            tsc = search_obj.group(22)
-            freq = search_obj.group(24)
-            common_comm = search_obj.group(2).replace(' ', '')
+            time_pre_dec = search_obj[6]
+            time_post_dec = search_obj[8]
+            core_busy = search_obj[10]
+            scaled = search_obj[12]
+            _from = search_obj[14]
+            _to = search_obj[16]
+            mperf = search_obj[18]
+            aperf = search_obj[20]
+            tsc = search_obj[22]
+            freq = search_obj[24]
+            common_comm = search_obj[2].replace(' ', '')
 
             # Not all kernel versions have io_boost field
             io_boost = '0'
-            search_obj = re.search(r'.*?io_boost=(\d+)', line)
-            if search_obj:
-                io_boost = search_obj.group(1)
+            if search_obj := re.search(r'.*?io_boost=(\d+)', line):
+                io_boost = search_obj[1]
 
             if sample_num == 0 :
                 start_time = Decimal(time_pre_dec) + Decimal(time_post_dec) / Decimal(1000000)
@@ -547,7 +594,7 @@ current_max_cpu = 0
 
 read_trace_data(filename)
 
-if graph_data_present == False:
+if not graph_data_present:
     print('No valid data to plot')
     sys.exit(2)
 
