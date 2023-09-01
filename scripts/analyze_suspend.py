@@ -222,16 +222,18 @@ class SystemValues:
 			self.embedded = True
 			self.addlogs = True
 			self.htmlfile = os.environ['LOG_FILE']
-		self.archargs = 'args_'+platform.machine()
+		self.archargs = f'args_{platform.machine()}'
 		self.hostname = platform.node()
 		if(self.hostname == ''):
 			self.hostname = 'localhost'
-		rtc = "rtc0"
-		if os.path.exists('/dev/rtc'):
-			rtc = os.readlink('/dev/rtc')
-		rtc = '/sys/class/rtc/'+rtc
-		if os.path.exists(rtc) and os.path.exists(rtc+'/date') and \
-			os.path.exists(rtc+'/time') and os.path.exists(rtc+'/wakealarm'):
+		rtc = os.readlink('/dev/rtc') if os.path.exists('/dev/rtc') else "rtc0"
+		rtc = f'/sys/class/rtc/{rtc}'
+		if (
+			os.path.exists(rtc)
+			and os.path.exists(f'{rtc}/date')
+			and os.path.exists(f'{rtc}/time')
+			and os.path.exists(f'{rtc}/wakealarm')
+		):
 			self.rtcpath = rtc
 		if (hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()):
 			self.ansi = True
@@ -240,21 +242,18 @@ class SystemValues:
 			return
 		self.timeformat = '%.{0}f'.format(num)
 	def setOutputFolder(self, value):
-		args = dict()
 		n = datetime.now()
-		args['date'] = n.strftime('%y%m%d')
+		args = {'date': n.strftime('%y%m%d')}
 		args['time'] = n.strftime('%H%M%S')
 		args['hostname'] = self.hostname
 		self.outdir = value.format(**args)
 	def setOutputFile(self):
-		if((self.htmlfile == '') and (self.dmesgfile != '')):
-			m = re.match('(?P<name>.*)_dmesg\.txt$', self.dmesgfile)
-			if(m):
-				self.htmlfile = m.group('name')+'.html'
-		if((self.htmlfile == '') and (self.ftracefile != '')):
-			m = re.match('(?P<name>.*)_ftrace\.txt$', self.ftracefile)
-			if(m):
-				self.htmlfile = m.group('name')+'.html'
+		if ((self.htmlfile == '') and (self.dmesgfile != '')):
+			if m := re.match('(?P<name>.*)_dmesg\.txt$', self.dmesgfile):
+				self.htmlfile = m['name'] + '.html'
+		if ((self.htmlfile == '') and (self.ftracefile != '')):
+			if m := re.match('(?P<name>.*)_ftrace\.txt$', self.ftracefile):
+				self.htmlfile = m['name'] + '.html'
 		if(self.htmlfile == ''):
 			self.htmlfile = 'output.html'
 	def initTestOutput(self, subdir, testpath=''):
@@ -265,44 +264,39 @@ class SystemValues:
 		testtime = n.strftime('suspend-%m%d%y-%H%M%S')
 		if not testpath:
 			testpath = n.strftime('suspend-%y%m%d-%H%M%S')
-		if(subdir != "."):
-			self.testdir = subdir+"/"+testpath
-		else:
-			self.testdir = testpath
-		self.teststamp = \
-			'# '+testtime+' '+self.prefix+' '+self.suspendmode+' '+kver
-		if(self.embedded):
-			self.dmesgfile = \
-				'/tmp/'+testtime+'_'+self.suspendmode+'_dmesg.txt'
-			self.ftracefile = \
-				'/tmp/'+testtime+'_'+self.suspendmode+'_ftrace.txt'
+		self.testdir = f"{subdir}/{testpath}" if (subdir != ".") else testpath
+		self.teststamp = f'# {testtime} {self.prefix} {self.suspendmode} {kver}'
+		if self.embedded:
+			self.dmesgfile = f'/tmp/{testtime}_{self.suspendmode}_dmesg.txt'
+			self.ftracefile = f'/tmp/{testtime}_{self.suspendmode}_ftrace.txt'
 			return
-		self.dmesgfile = \
-			self.testdir+'/'+self.prefix+'_'+self.suspendmode+'_dmesg.txt'
-		self.ftracefile = \
-			self.testdir+'/'+self.prefix+'_'+self.suspendmode+'_ftrace.txt'
-		self.htmlfile = \
-			self.testdir+'/'+self.prefix+'_'+self.suspendmode+'.html'
+		self.dmesgfile = f'{self.testdir}/{self.prefix}_{self.suspendmode}_dmesg.txt'
+		self.ftracefile = f'{self.testdir}/{self.prefix}_{self.suspendmode}_ftrace.txt'
+		self.htmlfile = f'{self.testdir}/{self.prefix}_{self.suspendmode}.html'
 		if not os.path.isdir(self.testdir):
 			os.mkdir(self.testdir)
 	def setDeviceFilter(self, value):
 		self.devicefilter = []
 		if value:
 			value = value.split(',')
-		for i in value:
-			self.devicefilter.append(i.strip())
+		self.devicefilter.extend(i.strip() for i in value)
 	def rtcWakeAlarmOn(self):
-		call('echo 0 > '+self.rtcpath+'/wakealarm', shell=True)
-		outD = open(self.rtcpath+'/date', 'r').read().strip()
-		outT = open(self.rtcpath+'/time', 'r').read().strip()
+		call(f'echo 0 > {self.rtcpath}/wakealarm', shell=True)
+		outD = open(f'{self.rtcpath}/date', 'r').read().strip()
+		outT = open(f'{self.rtcpath}/time', 'r').read().strip()
 		mD = re.match('^(?P<y>[0-9]*)-(?P<m>[0-9]*)-(?P<d>[0-9]*)', outD)
 		mT = re.match('^(?P<h>[0-9]*):(?P<m>[0-9]*):(?P<s>[0-9]*)', outT)
-		if(mD and mT):
+		if (mD and mT):
 			# get the current time from hardware
 			utcoffset = int((datetime.now() - datetime.utcnow()).total_seconds())
-			dt = datetime(\
-				int(mD.group('y')), int(mD.group('m')), int(mD.group('d')),
-				int(mT.group('h')), int(mT.group('m')), int(mT.group('s')))
+			dt = datetime(
+				int(mD['y']),
+				int(mD['m']),
+				int(mD['d']),
+				int(mT['h']),
+				int(mT['m']),
+				int(mT['s']),
+			)
 			nowtime = int(dt.strftime('%s')) + utcoffset
 		else:
 			# if hardware time fails, use the software time
@@ -310,7 +304,7 @@ class SystemValues:
 		alarm = nowtime + self.rtcwaketime
 		call('echo %d > %s/wakealarm' % (alarm, self.rtcpath), shell=True)
 	def rtcWakeAlarmOff(self):
-		call('echo 0 > %s/wakealarm' % self.rtcpath, shell=True)
+		call(f'echo 0 > {self.rtcpath}/wakealarm', shell=True)
 	def initdmesg(self):
 		# get the latest time stamp from the dmesg log
 		fp = Popen('dmesg', stdout=PIPE).stdout
@@ -320,36 +314,33 @@ class SystemValues:
 			idx = line.find('[')
 			if idx > 1:
 				line = line[idx:]
-			m = re.match('[ \t]*(\[ *)(?P<ktime>[0-9\.]*)(\]) (?P<msg>.*)', line)
-			if(m):
-				ktime = m.group('ktime')
+			if m := re.match('[ \t]*(\[ *)(?P<ktime>[0-9\.]*)(\]) (?P<msg>.*)', line):
+				ktime = m['ktime']
 		fp.close()
 		self.dmesgstart = float(ktime)
 	def getdmesg(self):
 		# store all new dmesg lines since initdmesg was called
 		fp = Popen('dmesg', stdout=PIPE).stdout
-		op = open(self.dmesgfile, 'a')
-		for line in fp:
-			line = line.replace('\r\n', '')
-			idx = line.find('[')
-			if idx > 1:
-				line = line[idx:]
-			m = re.match('[ \t]*(\[ *)(?P<ktime>[0-9\.]*)(\]) (?P<msg>.*)', line)
-			if(not m):
-				continue
-			ktime = float(m.group('ktime'))
-			if ktime > self.dmesgstart:
-				op.write(line)
-		fp.close()
-		op.close()
+		with open(self.dmesgfile, 'a') as op:
+			for line in fp:
+				line = line.replace('\r\n', '')
+				idx = line.find('[')
+				if idx > 1:
+					line = line[idx:]
+				m = re.match('[ \t]*(\[ *)(?P<ktime>[0-9\.]*)(\]) (?P<msg>.*)', line)
+				if(not m):
+					continue
+				ktime = float(m['ktime'])
+				if ktime > self.dmesgstart:
+					op.write(line)
+			fp.close()
 	def addFtraceFilterFunctions(self, file):
-		fp = open(file)
-		list = fp.read().split('\n')
-		fp.close()
+		with open(file) as fp:
+			list = fp.read().split('\n')
 		for i in list:
 			if len(i) < 2:
 				continue
-			self.tracefuncs[i] = dict()
+			self.tracefuncs[i] = {}
 	def getFtraceFilterFunctions(self, current):
 		rootCheck(True)
 		if not current:
@@ -366,22 +357,17 @@ class SystemValues:
 			else:
 				print self.colorText(i)
 	def setFtraceFilterFunctions(self, list):
-		fp = open(self.tpath+'available_filter_functions')
-		master = fp.read().split('\n')
-		fp.close()
-		flist = ''
-		for i in list:
-			if i not in master:
-				continue
-			if ' [' in i:
-				flist += i.split(' ')[0]+'\n'
-			else:
-				flist += i+'\n'
-		fp = open(self.tpath+'set_graph_function', 'w')
-		fp.write(flist)
-		fp.close()
+		with open(f'{self.tpath}available_filter_functions') as fp:
+			master = fp.read().split('\n')
+		flist = ''.join(
+			i.split(' ')[0] + '\n' if ' [' in i else i + '\n'
+			for i in list
+			if i in master
+		)
+		with open(f'{self.tpath}set_graph_function', 'w') as fp:
+			fp.write(flist)
 	def basicKprobe(self, name):
-		self.kprobes[name] = {'name': name,'func': name,'args': dict(),'format': name}
+		self.kprobes[name] = {'name': name, 'func': name, 'args': {}, 'format': name}
 	def defaultKprobe(self, name, kdata):
 		k = kdata
 		for field in ['name', 'format', 'func']:
@@ -390,7 +376,7 @@ class SystemValues:
 		if self.archargs in k:
 			k['args'] = k[self.archargs]
 		else:
-			k['args'] = dict()
+			k['args'] = {}
 			k['format'] = name
 		self.kprobes[name] = k
 	def kprobeColor(self, name):
@@ -411,23 +397,20 @@ class SystemValues:
 			elif c != '"':
 				data += c
 		fmt, args = self.kprobes[name]['format'], self.kprobes[name]['args']
-		arglist = dict()
+		arglist = {}
 		# now process the args
 		for arg in sorted(args):
 			arglist[arg] = ''
-			m = re.match('.* '+arg+'=(?P<arg>.*) ', data);
-			if m:
-				arglist[arg] = m.group('arg')
-			else:
-				m = re.match('.* '+arg+'=(?P<arg>.*)', data);
-				if m:
-					arglist[arg] = m.group('arg')
+			if m := re.match(f'.* {arg}=(?P<arg>.*) ', data):
+				arglist[arg] = m['arg']
+			elif m := re.match(f'.* {arg}=(?P<arg>.*)', data):
+				arglist[arg] = m['arg']
 		out = fmt.format(**arglist)
 		out = out.replace(' ', '_').replace('"', '')
 		return out
 	def kprobeText(self, kname, kprobe):
 		name = fmt = func = kname
-		args = dict()
+		args = {}
 		if 'name' in kprobe:
 			name = kprobe['name']
 		if 'format' in kprobe:
@@ -439,13 +422,13 @@ class SystemValues:
 		if 'args' in kprobe:
 			args = kprobe['args']
 		if re.findall('{(?P<n>[a-z,A-Z,0-9]*)}', func):
-			doError('Kprobe "%s" has format info in the function name "%s"' % (name, func))
+			doError(f'Kprobe "{name}" has format info in the function name "{func}"')
 		for arg in re.findall('{(?P<n>[a-z,A-Z,0-9]*)}', fmt):
 			if arg not in args:
-				doError('Kprobe "%s" is missing argument "%s"' % (name, arg))
-		val = 'p:%s_cal %s' % (name, func)
+				doError(f'Kprobe "{name}" is missing argument "{arg}"')
+		val = f'p:{name}_cal {func}'
 		for i in sorted(args):
-			val += ' %s=%s' % (i, args[i])
+			val += f' {i}={args[i]}'
 		val += '\nr:%s_ret %s $retval\n' % (name, func)
 		return val
 	def addKprobes(self, output=False):
@@ -462,27 +445,24 @@ class SystemValues:
 			if not self.testKprobe(name, self.kprobes[name]):
 				res = self.colorText('NO')
 				rejects.append(name)
-			else:
-				if name in self.tracefuncs:
-					kpl[0].append(name)
-				elif name in self.dev_tracefuncs:
-					if 'ub' in self.dev_tracefuncs[name]:
-						kpl[1].append(name)
-					else:
-						kpl[3].append(name)
+			elif name in self.tracefuncs:
+				kpl[0].append(name)
+			elif name in self.dev_tracefuncs:
+				if 'ub' in self.dev_tracefuncs[name]:
+					kpl[1].append(name)
 				else:
-					kpl[2].append(name)
+					kpl[3].append(name)
+			else:
+				kpl[2].append(name)
 			if output:
-				print('         %s: %s' % (name, res))
+				print(f'         {name}: {res}')
 		kplist = kpl[0] + kpl[1] + kpl[2] + kpl[3]
 		# remove all failed ones from the list
 		for name in rejects:
 			self.kprobes.pop(name)
 		# set the kprobes all at once
 		self.fsetVal('', 'kprobe_events')
-		kprobeevents = ''
-		for kp in kplist:
-			kprobeevents += self.kprobeText(kp, self.kprobes[kp])
+		kprobeevents = ''.join(self.kprobeText(kp, self.kprobes[kp]) for kp in kplist)
 		self.fsetVal(kprobeevents, 'kprobe_events')
 		# verify that the kprobes were set as ordered
 		check = self.fgetVal('kprobe_events')
@@ -494,7 +474,7 @@ class SystemValues:
 				res = self.colorText(res, 31)
 			else:
 				res = self.colorText(res, 32)
-			print('    working kprobe functions enabled: %s' % res)
+			print(f'    working kprobe functions enabled: {res}')
 		self.fsetVal('1', 'events/kprobes/enable')
 	def testKprobe(self, kname, kprobe):
 		self.fsetVal('0', 'events/kprobes/enable')
@@ -508,18 +488,15 @@ class SystemValues:
 			return False
 		linesout = len(kprobeevents.split('\n'))
 		linesack = len(check.split('\n'))
-		if linesack < linesout:
-			return False
-		return True
+		return linesack >= linesout
 	def fsetVal(self, val, path, mode='w'):
 		file = self.tpath+path
 		if not os.path.exists(file):
 			return False
 		try:
-			fp = open(file, mode, 0)
-			fp.write(val)
-			fp.flush()
-			fp.close()
+			with open(file, mode, 0) as fp:
+				fp.write(val)
+				fp.flush()
 		except:
 			pass
 		return True
@@ -529,9 +506,8 @@ class SystemValues:
 		if not os.path.exists(file):
 			return res
 		try:
-			fp = open(file, 'r')
-			res = fp.read()
-			fp.close()
+			with open(file, 'r') as fp:
+				res = fp.read()
 		except:
 			pass
 		return res
@@ -548,10 +524,7 @@ class SystemValues:
 		if len(self.tracefuncs) < 1 and self.suspendmode == 'command':
 			return True
 		for i in self.tracefuncs:
-			if 'func' in self.tracefuncs[i]:
-				f = self.tracefuncs[i]['func']
-			else:
-				f = i
+			f = self.tracefuncs[i]['func'] if 'func' in self.tracefuncs[i] else i
 			if name == f:
 				return True
 		return False
@@ -602,11 +575,11 @@ class SystemValues:
 					self.defaultKprobe(name, self.dev_tracefuncs[name])
 			print('INITIALIZING KPROBES...')
 			self.addKprobes(self.verbose)
-		if(self.usetraceevents):
+		if self.usetraceevents:
 			# turn trace events on
 			events = iter(self.traceevents)
 			for e in events:
-				self.fsetVal('1', 'events/power/'+e+'/enable')
+				self.fsetVal('1', f'events/power/{e}/enable')
 		# clear the trace buffer
 		self.fsetVal('', 'trace')
 	def verifyFtrace(self):
@@ -621,22 +594,14 @@ class SystemValues:
 				'set_ftrace_filter',
 				'set_graph_function'
 			]
-		for f in files:
-			if(os.path.exists(tp+f) == False):
-				return False
-		return True
+		return all(os.path.exists(tp+f) != False for f in files)
 	def verifyKprobes(self):
 		# files needed for kprobes to work
 		files = ['kprobe_events', 'events']
 		tp = self.tpath
-		for f in files:
-			if(os.path.exists(tp+f) == False):
-				return False
-		return True
+		return all(os.path.exists(tp+f) != False for f in files)
 	def colorText(self, str, color=31):
-		if not self.ansi:
-			return str
-		return '\x1B[%d;40m%s\x1B[m' % (color, str)
+		return str if not self.ansi else '\x1B[%d;40m%s\x1B[m' % (color, str)
 
 sysvals = SystemValues()
 
@@ -657,19 +622,15 @@ class DevProps:
 	def altName(self, dev):
 		if not self.altname or self.altname == dev:
 			return dev
-		return '%s [%s]' % (self.altname, dev)
+		return f'{self.altname} [{dev}]'
 	def xtraClass(self):
 		if self.xtraclass:
-			return ' '+self.xtraclass
-		if not self.async:
-			return ' sync'
-		return ''
+			return f' {self.xtraclass}'
+		return ' sync' if not self.async else ''
 	def xtraInfo(self):
 		if self.xtraclass:
-			return ' '+self.xtraclass
-		if self.async:
-			return ' async_device'
-		return ' sync_device'
+			return f' {self.xtraclass}'
+		return ' async_device' if self.async else ' sync_device'
 
 # Class: DeviceNode
 # Description:
@@ -729,37 +690,96 @@ class Data:
 	kerror = False
 	def __init__(self, num):
 		idchar = 'abcdefghij'
-		self.pstl = dict()
+		self.pstl = {}
 		self.testnumber = num
 		self.idstr = idchar[num]
 		self.dmesgtext = []
 		self.phases = []
-		self.dmesg = { # fixed list of 10 phases
-			'suspend_prepare': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#CCFFCC', 'order': 0},
-			        'suspend': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#88FF88', 'order': 1},
-			   'suspend_late': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#00AA00', 'order': 2},
-			  'suspend_noirq': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#008888', 'order': 3},
-		    'suspend_machine': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#0000FF', 'order': 4},
-			 'resume_machine': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#FF0000', 'order': 5},
-			   'resume_noirq': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#FF9900', 'order': 6},
-			   'resume_early': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#FFCC00', 'order': 7},
-			         'resume': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#FFFF88', 'order': 8},
-			'resume_complete': {'list': dict(), 'start': -1.0, 'end': -1.0,
-								'row': 0, 'color': '#FFFFCC', 'order': 9}
+		self.dmesg = {
+			'suspend_prepare': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#CCFFCC',
+				'order': 0,
+			},
+			'suspend': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#88FF88',
+				'order': 1,
+			},
+			'suspend_late': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#00AA00',
+				'order': 2,
+			},
+			'suspend_noirq': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#008888',
+				'order': 3,
+			},
+			'suspend_machine': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#0000FF',
+				'order': 4,
+			},
+			'resume_machine': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#FF0000',
+				'order': 5,
+			},
+			'resume_noirq': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#FF9900',
+				'order': 6,
+			},
+			'resume_early': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#FFCC00',
+				'order': 7,
+			},
+			'resume': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#FFFF88',
+				'order': 8,
+			},
+			'resume_complete': {
+				'list': {},
+				'start': -1.0,
+				'end': -1.0,
+				'row': 0,
+				'color': '#FFFFCC',
+				'order': 9,
+			},
 		}
 		self.phases = self.sortedPhases()
 		self.devicegroups = []
-		for phase in self.phases:
-			self.devicegroups.append([phase])
+		self.devicegroups.extend([phase] for phase in self.phases)
 		self.errorinfo = {'suspend':[],'resume':[]}
 	def extractErrorInfo(self, dmesg):
 		error = ''
@@ -769,21 +789,17 @@ class Data:
 				m = re.match('[ \t]*(\[ *)(?P<ktime>[0-9\.]*)(\]) .*', dmesg[i])
 				if not m:
 					continue
-				tm = float(m.group('ktime'))
+				tm = float(m['ktime'])
 				if tm < self.start or tm > self.end:
 					continue
 				for j in range(i-10, i+1):
 					error += dmesg[j]
 				continue
 			if error:
-				m = re.match('[ \t]*\[ *[0-9\.]*\]  \[\<[0-9a-fA-F]*\>\] .*', dmesg[i])
-				if m:
+				if m := re.match('[ \t]*\[ *[0-9\.]*\]  \[\<[0-9a-fA-F]*\>\] .*', dmesg[i]):
 					error += dmesg[i]
 				else:
-					if tm < self.tSuspended:
-						dir = 'suspend'
-					else:
-						dir = 'resume'
+					dir = 'suspend' if tm < self.tSuspended else 'resume'
 					error = error.replace('<', '&lt').replace('>', '&gt')
 					vprint('kernel error found in %s at %f' % (dir, tm))
 					self.errorinfo[dir].append((tm, error))
@@ -835,45 +851,28 @@ class Data:
 	def addDeviceFunctionCall(self, displayname, kprobename, proc, pid, start, end, cdata, rdata):
 		# try to place the call in a device
 		tgtdev = self.sourceDevice(self.phases, start, end, pid, 'device')
-		# calls with device pids that occur outside device bounds are dropped
-		# TODO: include these somehow
-		if not tgtdev and pid in self.devpids:
-			return False
-		# try to place the call in a thread
 		if not tgtdev:
+			if pid in self.devpids:
+				return False
 			tgtdev = self.sourceDevice(self.phases, start, end, pid, 'thread')
 		# create new thread blocks, expand as new calls are found
 		if not tgtdev:
-			if proc == '<...>':
-				threadname = 'kthread-%d' % (pid)
-			else:
-				threadname = '%s-%d' % (proc, pid)
+			threadname = 'kthread-%d' % (pid) if proc == '<...>' else '%s-%d' % (proc, pid)
 			tgtphase = self.sourcePhase(start)
 			self.newAction(tgtphase, threadname, pid, '', start, end, '', ' kth', '')
 			return self.addDeviceFunctionCall(displayname, kprobename, proc, pid, start, end, cdata, rdata)
-		# this should not happen
-		if not tgtdev:
-			vprint('[%f - %f] %s-%d %s %s %s' % \
-				(start, end, proc, pid, kprobename, cdata, rdata))
-			return False
 		# place the call data inside the src element of the tgtdev
 		if('src' not in tgtdev):
 			tgtdev['src'] = []
 		dtf = sysvals.dev_tracefuncs
-		ubiquitous = False
-		if kprobename in dtf and 'ub' in dtf[kprobename]:
-			ubiquitous = True
-		title = cdata+' '+rdata
+		ubiquitous = kprobename in dtf and 'ub' in dtf[kprobename]
+		title = f'{cdata} {rdata}'
 		mstr = '\(.*\) *(?P<args>.*) *\((?P<caller>.*)\+.* arg1=(?P<ret>.*)'
-		m = re.match(mstr, title)
-		if m:
-			c = m.group('caller')
-			a = m.group('args').strip()
-			r = m.group('ret')
-			if len(r) > 6:
-				r = ''
-			else:
-				r = 'ret=%s ' % r
+		if m := re.match(mstr, title):
+			c = m['caller']
+			a = m['args'].strip()
+			r = m['ret']
+			r = '' if len(r) > 6 else f'ret={r} '
 			if ubiquitous and c in dtf and 'ub' in dtf[c]:
 				return False
 		color = sysvals.kprobeColor(kprobename)
@@ -950,20 +949,12 @@ class Data:
 					p.count += 1
 					src.remove(e)
 	def trimTimeVal(self, t, t0, dT, left):
-		if left:
-			if(t > t0):
-				if(t - dT < t0):
-					return t0
-				return t - dT
-			else:
-				return t
+		if left and (t > t0):
+			return max(t - dT, t0)
+		elif left or t >= t0 + dT:
+			return t
 		else:
-			if(t < t0 + dT):
-				if(t > t0):
-					return t0 + dT
-				return t + dT
-			else:
-				return t
+			return t0 + dT if (t > t0) else t + dT
 	def trimTime(self, t0, dT, left):
 		self.tSuspended = self.trimTimeVal(self.tSuspended, t0, dT, left)
 		self.tResumed = self.trimTimeVal(self.tResumed, t0, dT, left)
@@ -1009,35 +1000,31 @@ class Data:
 		return sorted(self.dmesg, key=self.dmesgSortVal)
 	def sortedDevices(self, phase):
 		list = self.dmesg[phase]['list']
-		slist = []
-		tmp = dict()
+		tmp = {}
 		for devname in list:
 			dev = list[devname]
 			tmp[dev['start']] = devname
-		for t in sorted(tmp):
-			slist.append(tmp[t])
-		return slist
+		return [tmp[t] for t in sorted(tmp)]
 	def fixupInitcalls(self, phase):
 		# if any calls never returned, clip them at system resume end
 		phaselist = self.dmesg[phase]['list']
 		for devname in phaselist:
 			dev = phaselist[devname]
-			if(dev['end'] < 0):
+			if (dev['end'] < 0):
 				for p in self.phases:
 					if self.dmesg[p]['end'] > dev['start']:
 						dev['end'] = self.dmesg[p]['end']
 						break
-				vprint('%s (%s): callback didnt return' % (devname, phase))
+				vprint(f'{devname} ({phase}): callback didnt return')
 	def deviceFilter(self, devicefilter):
 		for phase in self.phases:
 			list = self.dmesg[phase]['list']
 			rmlist = []
 			for name in list:
-				keep = False
-				for filter in devicefilter:
-					if filter in name or \
-						('drv' in list[name] and filter in list[name]['drv']):
-						keep = True
+				keep = any(
+					filter in name or ('drv' in list[name] and filter in list[name]['drv'])
+					for filter in devicefilter
+				)
 				if not keep:
 					rmlist.append(name)
 			for name in rmlist:
@@ -1083,10 +1070,7 @@ class Data:
 		# if no target phase was found, pin it to the edge
 		if targetphase == 'none':
 			p0start = self.dmesg[self.phases[0]]['start']
-			if start <= p0start:
-				targetphase = self.phases[0]
-			else:
-				targetphase = self.phases[-1]
+			targetphase = self.phases[0] if start <= p0start else self.phases[-1]
 		if pid == -2:
 			htmlclass = ' bg'
 		elif pid == -3:
@@ -1103,9 +1087,7 @@ class Data:
 		self.html_device_id += 1
 		devid = '%s%d' % (self.idstr, self.html_device_id)
 		list = self.dmesg[phase]['list']
-		length = -1.0
-		if(start >= 0 and end >= 0):
-			length = end - start
+		length = end - start if (start >= 0 and end >= 0) else -1.0
 		if pid == -2:
 			i = 2
 			origname = name
@@ -1120,12 +1102,8 @@ class Data:
 			list[name]['color'] = color
 		return name
 	def deviceChildren(self, devname, phase):
-		devlist = []
 		list = self.dmesg[phase]['list']
-		for child in list:
-			if(list[child]['par'] == devname):
-				devlist.append(child)
-		return devlist
+		return [child for child in list if (list[child]['par'] == devname)]
 	def printDetails(self):
 		vprint('Timeline Details:')
 		vprint('          test start: %f' % self.start)
